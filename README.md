@@ -1,24 +1,31 @@
 # Payment Processing Starter - "Dev Desk Shop"
 
-Express + Prisma (SQLite) + React (Vite) store. Product list and cart already work.
-**Your job in class:** add real payments with [Stripe](https://stripe.com) (test mode).
+Express + Prisma (SQLite) + React (Vite) store. Product list, cart, database, order tracking and all React pages
+are **already built**. Your job: write the **5 pieces of code that talk to [Stripe](https://stripe.com)** (test mode).
 
-## Prerequisites
-- Node 18+ and npm
-- A free Stripe account (no business details needed for test mode) - https://dashboard.stripe.com/register
-- Stripe CLI - https://docs.stripe.com/stripe-cli (`brew install stripe/stripe-cli/stripe` on Mac)
+## Before class (please do this!)
+1. Install **Node 18+** and **git**.
+2. Create a free Stripe account: https://dashboard.stripe.com/register (no business details needed for test mode).
+3. Install the **Stripe CLI** and run `stripe login`:
+   - Mac: `brew install stripe/stripe-cli/stripe` (if Homebrew complains, download the binary from https://github.com/stripe/stripe-cli/releases/latest)
+   - Windows: `scoop install stripe` or download the `.zip` from the same releases page
+   - Docs: https://docs.stripe.com/stripe-cli
+4. Clone and install (steps below) so class time isn't spent on downloads.
 
 ## Setup
 ```bash
-# 1. Backend
+git clone https://github.com/joker-jonesy/payments-demo-starter.git
+cd payments-demo-starter
+
+# Backend
 cd server
 npm install
-cp .env.example .env          # then fill in your Stripe keys (see below)
+cp .env.example .env          # then add your Stripe keys (below)
 npx prisma db push            # creates the SQLite database
 npm run seed                  # adds sample products
 npm run dev                   # http://localhost:4000
 
-# 2. Frontend (new terminal)
+# Frontend (new terminal)
 cd client
 npm install
 npm run dev                   # http://localhost:5173
@@ -26,24 +33,27 @@ npm run dev                   # http://localhost:5173
 
 ## Stripe keys
 1. Stripe Dashboard -> make sure **Test mode / Sandbox** is on.
-2. Developers -> API keys -> copy the **Secret key** (`sk_test_...`) into `server/.env`.
-3. In a third terminal: `stripe login`, then
-   `stripe listen --events checkout.session.completed,checkout.session.expired --forward-to localhost:4000/api/webhook`
-   It prints a `whsec_...` signing secret -> put it in `STRIPE_WEBHOOK_SECRET`. Restart the server.
+2. Developers -> API keys -> copy the **Secret key** (`sk_test_...`) into `server/.env` as `STRIPE_SECRET_KEY`.
+   (If you create a *restricted* key `rk_test_...`, give it Write access to Checkout Sessions and Refunds.)
+3. In a third terminal run:
+   ```bash
+   stripe listen --events checkout.session.completed,checkout.session.expired --forward-to localhost:4000/api/webhook
+   ```
+   It prints a `whsec_...` signing secret -> put it in `STRIPE_WEBHOOK_SECRET`, then restart the server.
+   Leave this terminal running whenever you test.
 
 Never commit `.env`. Never use live keys (`sk_live_`) in this class.
 
-## Your TODOs
-Search the project for `TODO` - they are numbered 1-16 in the order you should do them:
-
+## Your TODOs (search the project for `TODO`)
 | # | File | What |
 |---|------|------|
-| 1-5 | `server/src/routes/checkout.js` | Create Order + Stripe Checkout Session |
-| 6-8 | `server/src/routes/webhook.js` | Verify signature, mark order PAID |
-| 9-10 | `server/src/routes/orders.js` | Lookup by session, refunds |
-| 11 | `client/src/pages/Cart.jsx` | Call checkout, redirect to Stripe |
-| 12-15 | `client/src/pages/Success.jsx` | Confirm payment, poll for webhook |
-| 16 | `client/src/pages/Orders.jsx` | Refund button |
+| 1 | `server/src/routes/checkout.js` | Create a Stripe Checkout Session |
+| 2 | `server/src/routes/webhook.js` | Verify the webhook signature |
+| 3 | `server/src/routes/webhook.js` | Handle `checkout.session.completed` |
+| 4 | `server/src/routes/webhook.js` | Handle `checkout.session.expired` |
+| 5 | `server/src/routes/orders.js` | Refund an order |
+
+Everything else (`orderService.js`, the React app, Prisma schema) is done - read it, but you don't need to change it.
 
 ## Test cards
 | Card | Result |

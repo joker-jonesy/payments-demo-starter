@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getOrders } from '../api.js';
+import { getOrders, refundOrder } from '../api.js';
 import { formatMoney } from '../money.js';
 
 export default function Orders() {
@@ -9,7 +9,14 @@ export default function Orders() {
   const load = () => getOrders().then(setOrders).catch((e) => setError(e.message));
   useEffect(() => { load(); }, []);
 
-  // TODO 16 (stretch): handleRefund(id) calls refundOrder(id) from api.js, then reloads the list
+  async function handleRefund(id) {
+    try {
+      await refundOrder(id);
+      load();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
 
   return (
     <>
@@ -26,7 +33,7 @@ export default function Orders() {
               <td><span className={`badge ${o.status}`}>{o.status}</span></td>
               <td>{o.items.map((i) => `${i.quantity}× ${i.product.name}`).join(', ')}</td>
               <td>{formatMoney(o.totalCents)}</td>
-              <td>{/* TODO 16: Refund button for PAID orders */}</td>
+              <td>{o.status === 'PAID' && <button onClick={() => handleRefund(o.id)}>Refund</button>}</td>
             </tr>
           ))}
         </tbody>

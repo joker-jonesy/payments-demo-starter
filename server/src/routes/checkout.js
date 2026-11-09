@@ -1,21 +1,34 @@
 import { Router } from 'express';
-import { prisma } from '../db.js';
 import { stripe } from '../stripe.js';
+import { validateCart, createPendingOrder, attachSession, HttpError } from '../orderService.js';
 
 const router = Router();
 
 // POST /api/checkout  body: { items: [{ productId, quantity }] }
 router.post('/', async (req, res) => {
-  // TODO 1: validate req.body.items (non-empty array, integer quantity >= 1)
-  // TODO 2: look the products up in the DB. NEVER trust prices sent from the browser.
-  //         Check that stock >= quantity. Compute totalCents.
-  // TODO 3: create a PENDING Order (+ OrderItems) with prisma BEFORE going to Stripe.
-  // TODO 4: create a Stripe Checkout Session:
-  //         stripe.checkout.sessions.create({ mode: 'payment', line_items, metadata: { orderId },
-  //                                            success_url, cancel_url })
-  //         Docs: https://docs.stripe.com/api/checkout/sessions/create
-  // TODO 5: save session.id on the Order (stripeSessionId), then respond with { url: session.url }
-  res.status(501).json({ error: 'Not implemented yet' });
+  try {
+    // Already built for you: check the cart against our DB and save a PENDING order.
+    const { lines, totalCents } = await validateCart(req.body.items);
+    const order = await createPendingOrder(lines, totalCents);
+
+    // TODO 1: create a Stripe Checkout Session
+    //   stripe.checkout.sessions.create({
+    //     mode: 'payment',
+    //     line_items: [...]   <- build from `lines`: quantity + price_data { currency, unit_amount, product_data { name } }
+    //     metadata: { orderId: String(order.id) },
+    //     success_url: `${process.env.CLIENT_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+    //     cancel_url:  `${process.env.CLIENT_URL}/cart`,
+    //   })
+    //   Docs: https://docs.stripe.com/api/checkout/sessions/create
+    const session = null; // <- replace this line
+
+    await attachSession(order.id, session.id);
+    res.json({ url: session.url }); // the React app redirects the browser here
+  } catch (err) {
+    if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Could not start checkout' });
+  }
 });
 
 export default router;

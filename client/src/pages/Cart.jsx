@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useCart } from '../CartContext.jsx';
+import { createCheckout } from '../api.js';
 import { formatMoney } from '../money.js';
-// TODO 11: import { createCheckout } from '../api.js';
 
 export default function Cart() {
   const { cart, setQuantity, totalCents } = useCart();
@@ -12,9 +12,9 @@ export default function Cart() {
     setLoading(true);
     setError('');
     try {
-      // TODO 11: call createCheckout(...) from api.js. Send ONLY { productId, quantity } per line -
-      //          the server decides prices. Then redirect: window.location.href = url
-      throw new Error('Checkout not implemented yet');
+      // Only send ids + quantities. The server decides the prices.
+      const { url } = await createCheckout(cart.map((l) => ({ productId: l.product.id, quantity: l.quantity })));
+      window.location.href = url; // redirect to Stripe's hosted page
     } catch (e) {
       setError(e.message);
       setLoading(false);

@@ -1,18 +1,31 @@
 import { Router } from 'express';
-import { prisma } from '../db.js';
 import { stripe } from '../stripe.js';
+import { listOrders, findOrderBySession, findOrder, markOrderRefunded } from '../orderService.js';
 
 const router = Router();
-const include = { items: { include: { product: true } } };
 
-router.get('/', async (_req, res) => {
-  res.json(await prisma.order.findMany({ include, orderBy: { id: 'desc' } }));
+router.get('/', async (_req, res) => res.json(await listOrders()));
+
+// Used by the React success page to confirm the payment
+router.get('/by-session/:sessionId', async (req, res) => {
+  const order = await findOrderBySession(req.params.sessionId);
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+  res.json(order);
 });
 
-// TODO 9: GET /by-session/:sessionId -> the Order with that stripeSessionId (404 if none)
-//         The React success page uses this to confirm the payment.
+router.post('/:id/refund', async (req, res) => {
+  try {
+    const order = await findOrder(Number(req.params.id));
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (order.status !== 'PAID') return res.status(400).json({ error: 'Only PAID orders can be refunded' });
 
-// TODO 10 (stretch): POST /:id/refund
-//         Only PAID orders. Call stripe.refunds.create({ payment_intent }) then set status REFUNDED.
+    // TODO 5: refund the original payment - stripe.refunds.create({ payment_intent: order.paymentIntentId })
+
+    res.json(await markOrderRefunded(order.id));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Refund failed' });
+  }
+});
 
 export default router;
