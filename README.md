@@ -28,7 +28,7 @@ npm run dev                   # http://localhost:5173
 1. Stripe Dashboard -> make sure **Test mode / Sandbox** is on.
 2. Developers -> API keys -> copy the **Secret key** (`sk_test_...`) into `server/.env`.
 3. In a third terminal: `stripe login`, then
-   `stripe listen --forward-to localhost:4000/api/webhook`
+   `stripe listen --events checkout.session.completed,checkout.session.expired --forward-to localhost:4000/api/webhook`
    It prints a `whsec_...` signing secret -> put it in `STRIPE_WEBHOOK_SECRET`. Restart the server.
 
 Never commit `.env`. Never use live keys (`sk_live_`) in this class.
