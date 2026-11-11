@@ -11,18 +11,20 @@ router.post('/', async (req, res) => {
     const { lines, totalCents } = await validateCart(req.body.items);
     const order = await createPendingOrder(lines, totalCents);
 
-    // TODO 1 (STRIPE 1): ask Stripe to make a payment page for this order.
-    //   Replace the line below with:  await stripe.checkout.sessions.create({ ... })
-    //   Fill in these pieces:
-    //     mode: 'payment'                  <- one-time payment
-    //     line_items: [ ... ]              <- one item per entry in `lines`. Each needs:
-    //                                         quantity, and price_data { currency: 'usd',
-    //                                         unit_amount (price in cents), product_data { name } }
-    //     metadata: { orderId: String(order.id) }   <- a sticky note Stripe hands back later
-    //     success_url: `${process.env.CLIENT_URL}/success?session_id={CHECKOUT_SESSION_ID}`
-    //     cancel_url:  `${process.env.CLIENT_URL}/cart`
-    //   Docs: https://docs.stripe.com/api/checkout/sessions/create
-    const session = null; // <- STRIPE 1: replace this line
+    const session = await stripe.checkout.sessions.create({
+      mode:"payment",
+      line_items: lines.map(l => ({
+        quantity: l.quantity,
+        price_data:{
+          currency: "usd",
+          unit_amount: l.product.priceCents,
+          product_data: {name: l.product.name, description: l.product.description},
+        }
+      })),
+      metadata: {orderId: String(order.id)},
+      success_url:`${process.env.CLIENT_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:`${process.env.CLIENT_URL}/cart`
+    })
 
     await attachSession(order.id, session.id);
     res.json({ url: session.url }); // the React app redirects the browser here
