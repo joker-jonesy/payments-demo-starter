@@ -19,7 +19,9 @@ router.post('/:id/refund', async (req, res) => {
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (order.status !== 'PAID') return res.status(400).json({ error: 'Only PAID orders can be refunded' });
 
-    // TODO 5: refund the original payment - stripe.refunds.create({ payment_intent: order.paymentIntentId })
+    // TODO 5 (STRIPE 5): give the money back. Refunds point at the original payment:
+    //   await stripe.refunds.create({ payment_intent: order.paymentIntentId });
+    //   Docs: https://docs.stripe.com/api/refunds/create
 
     res.json(await markOrderRefunded(order.id));
   } catch (err) {
